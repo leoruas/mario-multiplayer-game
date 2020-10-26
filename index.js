@@ -13,13 +13,30 @@ app.get('/', (req, res) => {
     res.sendFile(__dirname + '/public/index.html');
 })
 
-var players = {}  
+var players = {}
 io.on('connect', (socket) => {
+    let sprite = () => {
+        let length = Object.keys(players).length
+
+        if (length == 1)
+            return "player1.png";
+        else if (length == 2)
+            return "player2.png";
+        else if (length == 3)
+            return "player3.png";
+        else
+            return "player1.png";
+
+    };
+
+    console.log("sprite", sprite());
     console.log("New client has connected with id:", socket.id);
 
-    socket.on('new-player', function(payload) { 
+    socket.on('new-player', function (payload) {
         players[socket.id] = payload;
+        players[socket.id].sprite = sprite();
 
+        socket.emit('create-player', payload);
         io.emit('update-players', players); //emit to ALL connected sockets
         // socket.broadcast.emit('create-player', payload)
         //Calling socket.broadcast.emit sends it to every client connected to the server, except that one socket it was called on.
@@ -31,13 +48,13 @@ io.on('connect', (socket) => {
         io.emit('update-players', players);
     })
 
-    socket.on('update-position', (payload) => {
+    socket.on('update-players-position', (payload) => {
         Object.keys(payload).forEach((key) => {
-            if(key !== 'id')
+            if (key !== 'id')
                 players[payload.id][key] = payload[key];
         })
-        
-        io.emit('update-position', players);
+
+        io.emit('update-players-position', players);
     })
 
     // socket.on('addPoint', (id) => {

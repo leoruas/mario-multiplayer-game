@@ -31,10 +31,29 @@ var otherPlayers = {};
 var food;
 var scoreList = document.getElementById("scoreList");
 
+socket.on('connect', function () {
+    let x = Math.floor(Math.random() * gameArea.canvas.width);
+    // if (x >= 16) x -= 16;
+    let y = Math.floor(Math.random() * gameArea.canvas.height);
+    // if (y >= 16) y -= 16
+    
+    socket.emit('new-player', {
+        x: x,
+        y: y,
+        speed: 6
+    })
+})
+
 socket.on('addPoint', function (id) {
     player.score++;
     scoreList.childNodes[id].innerText = `Player ${id + 1}: ${player.score} pontos`
 });
+
+socket.on('create-player', function (pl){ 
+    console.log(pl);
+    player = new Player(pl.x, pl.y, pl.speed, "assets/" + pl.sprite);
+    startGame();
+})
 
 socket.on('update-players', function (players) {
     var playersFound = {};
@@ -42,7 +61,7 @@ socket.on('update-players', function (players) {
         if (!Object.keys(otherPlayers).includes(id) && socket.id !== id) {
             var data = players[id];
             console.log("add new player", data);
-            var newPlayer = new Player(data.x, data.y, data.speed, "assets/player1.png");
+            var newPlayer = new Player(data.x, data.y, data.speed, "assets/" + data.sprite);
             otherPlayers[id] = newPlayer;
         }
         playersFound[id] = true;
@@ -56,7 +75,7 @@ socket.on('update-players', function (players) {
     }
 });
 
-socket.on('update-position', function (players) {
+socket.on('update-players-position', function (players) {
     for (var id in players) {
         if (socket.id !== id) {
             console.log("here", players[id])
@@ -69,13 +88,13 @@ socket.on('update-position', function (players) {
 
 function startGame() {
     this.gameArea.start();
-    player = new Player(100, 100, 7, "assets/player1.png");
-    socket.emit('new-player', {
-        x: player.x,
-        y: player.y,
-        speed: player.speed,
-        isFlipped: false
-    })
+    // player = new Player(100, 100, 7, "assets/player1.png");
+    // socket.emit('new-player', {
+    //     x: player.x,
+    //     y: player.y,
+    //     speed: player.speed,
+    //     isFlipped: false
+    // })
 
     x = Math.floor(Math.random() * gameArea.canvas.width);
     if (x >= 16) x -= 16;
@@ -218,7 +237,7 @@ function checkKeys() {
     }
 
     if (hasMoved)
-        socket.emit('update-position', {
+        socket.emit('update-players-position', {
             id: socket.id,
             x: player.x,
             y: player.y,
