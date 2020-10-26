@@ -13,7 +13,8 @@ app.get('/', (req, res) => {
     res.sendFile(__dirname + '/public/index.html');
 })
 
-var players = {}
+var players = {};
+var foods = [];
 io.on('connect', (socket) => {
     let sprite = (length) => {
         if (length == 1)
@@ -27,7 +28,7 @@ io.on('connect', (socket) => {
 
     };
 
-    console.log("New client has connected with id:", socket.id);
+    console.log("New client has connected with id: ", socket.id);
 
     socket.on('new-player', function (payload) {
         players[socket.id] = payload;
@@ -37,21 +38,29 @@ io.on('connect', (socket) => {
         io.emit('update-players', players); //emit to ALL connected sockets
         // socket.broadcast.emit('create-player', payload)
         //Calling socket.broadcast.emit sends it to every client connected to the server, except that one socket it was called on.
+    });
+
+    socket.on('new-food', function (payload) {
+        foods.push(payload);
+
+        io.emit('update-foods', foods);
     })
 
     socket.on('disconnect', () => {
         console.log("Player disconnected");
         delete players[socket.id];
+        foods.pop();
         io.emit('update-players', players);
+        io.emit('update-foods', foods);
     })
 
-    socket.on('update-players-position', (payload) => {
+    socket.on('update-players-status', (payload) => {
         Object.keys(payload).forEach((key) => {
             if (key !== 'id')
                 players[payload.id][key] = payload[key];
         })
 
-        io.emit('update-players-position', players);
+        io.emit('update-players-status', players);
     })
 
     // socket.on('addPoint', (id) => {

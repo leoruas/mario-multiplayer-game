@@ -29,7 +29,7 @@ var gameArea = {
 
 var player;
 var otherPlayers = {};
-var food;
+var foods = [];
 var scoreList = document.getElementById("scoreList");
 
 socket.on('connect', function () {
@@ -47,6 +47,18 @@ socket.on('connect', function () {
         x: x,
         y: y,
         speed: 6
+    });
+
+    spriteH = 16;
+    spriteW = 16;
+    x = Math.floor(Math.random() * gameArea.canvas.width);
+    if (x >= spriteW) x -= spriteW;
+    y = Math.floor(Math.random() * gameArea.canvas.height);
+    if (y >= spriteH) y -= spriteH;
+
+    socket.emit('new-food', {
+        x: x,
+        y: y
     })
 })
 
@@ -56,9 +68,17 @@ socket.on('addPoint', function (id) {
 });
 
 socket.on('create-player', function (pl){ 
-    console.log(pl);
     player = new Player(pl.x, pl.y, pl.speed, "assets/" + pl.sprite);
-    startGame();
+
+    gameArea.start();    
+})
+
+socket.on('update-foods', function (payload) {
+    foods = [];
+    
+    payload.forEach((food) => {
+        foods.push(new Food(food.x, food.y));
+    })
 })
 
 socket.on('update-players', function (players) {
@@ -81,45 +101,15 @@ socket.on('update-players', function (players) {
     }
 });
 
-socket.on('update-players-position', function (players) {
+socket.on('update-players-status', function (players) {
     for (var id in players) {
         if (socket.id !== id) {
-            console.log("here", players[id])
-            otherPlayers[id].x = players[id].x;
-            otherPlayers[id].y = players[id].y;
-            otherPlayers[id].isFlipped = players[id].isFlipped;
+            Object.keys(players[id]).forEach(key => {
+                otherPlayers[id][key] = players[id][key]
+            })
         }
     }
 })
-
-function startGame() {
-    this.gameArea.start();
-    // player = new Player(100, 100, 7, "assets/player1.png");
-    // socket.emit('new-player', {
-    //     x: player.x,
-    //     y: player.y,
-    //     speed: player.speed,
-    //     isFlipped: false
-    // })
-
-    x = Math.floor(Math.random() * gameArea.canvas.width);
-    if (x >= 16) x -= 16;
-    y = Math.floor(Math.random() * gameArea.canvas.height);
-    if (y >= 16) y -= 16
-    food = new Food(x, y);
-
-    // var scoreList = document.getElementById("scoreList");
-    // //foreach player
-    // const newScore = (id) => {
-    //     const item = document.createElement("li");
-    //     item.id = `player${id}`
-    //     item.innerText = `Player ${id + 1}: 0 pontos`
-
-    //     return item;
-    // };
-
-    // scoreList.append(newScore(0));
-};
 
 function Player(x, y, speed, src) {
     this.x = x;
@@ -208,12 +198,18 @@ function Food(x, y) {
 function updateGameArea() {
     gameArea.clear();
 
-    if (food.wasEaten(player)) food.respawn();
+    // foods.forEach(food => {
+    //     if(food.wasEaten(player)) food.respawn
+    // })
+    // if (food.wasEaten(player)) food.respawn();
 
     checkKeys();
     player.newPos();
     player.update();
-    food.update();
+    foods.forEach(food => {
+        food.update();
+    })
+    
     for (var id in otherPlayers)
         otherPlayers[id].update();
 }
@@ -243,7 +239,7 @@ function checkKeys() {
     }
 
     if (hasMoved)
-        socket.emit('update-players-position', {
+        socket.emit('update-players-status', {
             id: socket.id,
             x: player.x,
             y: player.y,
