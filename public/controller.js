@@ -38,8 +38,8 @@ socket.on('addPoint', function (id) {
 
 socket.on('update-players', function (players) {
     var playersFound = {};
-    for(var id in players) {
-        if(!Object.keys(otherPlayers).includes(id) && socket.id !== id) {
+    for (var id in players) {
+        if (!Object.keys(otherPlayers).includes(id) && socket.id !== id) {
             var data = players[id];
             console.log("add new player", data);
             var newPlayer = new Player(data.x, data.y, data.speed, "assets/player1.png");
@@ -48,13 +48,24 @@ socket.on('update-players', function (players) {
         playersFound[id] = true;
     };
 
-    for(var id in otherPlayers) {
-        if(!Object.keys(playersFound).includes(id)){
+    for (var id in otherPlayers) {
+        if (!Object.keys(playersFound).includes(id)) {
             console.log("player disconnected ", id);
             delete otherPlayers[id];
         }
     }
 });
+
+socket.on('update-position', function (players) {
+    for (var id in players) {
+        if (socket.id !== id) {
+            console.log("here", players[id])
+            otherPlayers[id].x = players[id].x;
+            otherPlayers[id].y = players[id].y;
+            otherPlayers[id].isFlipped = players[id].isFlipped;
+        }
+    }
+})
 
 function startGame() {
     this.gameArea.start();
@@ -62,7 +73,8 @@ function startGame() {
     socket.emit('new-player', {
         x: player.x,
         y: player.y,
-        speed: player.speed
+        speed: player.speed,
+        isFlipped: false
     })
 
     x = Math.floor(Math.random() * gameArea.canvas.width);
@@ -77,7 +89,7 @@ function startGame() {
     //     const item = document.createElement("li");
     //     item.id = `player${id}`
     //     item.innerText = `Player ${id + 1}: 0 pontos`
-        
+
     //     return item;
     // };
 
@@ -177,24 +189,41 @@ function updateGameArea() {
     player.newPos();
     player.update();
     food.update();
-    for(var id in otherPlayers)
+    for (var id in otherPlayers)
         otherPlayers[id].update();
 }
 
 function checkKeys() {
     player.speedX = 0;
     player.speedY = 0;
+    var hasMoved = false;
 
-    if (gameArea.keys["ArrowUp"]) player.speedY = -player.speed;
-    if (gameArea.keys["ArrowDown"]) player.speedY = player.speed;
+    if (gameArea.keys["ArrowUp"]) {
+        hasMoved = true;
+        player.speedY = -player.speed;
+    }
+    if (gameArea.keys["ArrowDown"]) {
+        hasMoved = true;
+        player.speedY = player.speed;
+    }
     if (gameArea.keys["ArrowRight"]) {
+        hasMoved = true;
         player.speedX = player.speed;
         player.isFlipped = false;
     }
     if (gameArea.keys["ArrowLeft"]) {
+        hasMoved = true;
         player.speedX = -player.speed;
         player.isFlipped = true;
     }
+
+    if (hasMoved)
+        socket.emit('update-position', {
+            id: socket.id,
+            x: player.x,
+            y: player.y,
+            isFlipped: player.isFlipped
+        })
 }
 
 // function log() {
