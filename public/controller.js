@@ -2,11 +2,12 @@ var socket = io();
 
 var gameArea = {
     canvas: document.getElementById("canvas"),
-    start: function () {
+    setup: function () {
         this.canvas.width = 512;
         this.canvas.height = 512;
         this.ctx = this.canvas.getContext("2d");
-
+    },
+    start: function () {
         this.interval = setInterval(updateGameArea, 20);
 
         this.keys = [];
@@ -32,10 +33,15 @@ var food;
 var scoreList = document.getElementById("scoreList");
 
 socket.on('connect', function () {
+    gameArea.setup();
+    //maybe make it responsive to sprite?
+    let spriteW = 30;
+    let spriteH = 39;
+
     let x = Math.floor(Math.random() * gameArea.canvas.width);
-    // if (x >= 16) x -= 16;
+    if (x >= spriteW) x -= spriteW;
     let y = Math.floor(Math.random() * gameArea.canvas.height);
-    // if (y >= 16) y -= 16
+    if (y >= spriteH) y -= spriteH;
     
     socket.emit('new-player', {
         x: x,

@@ -15,9 +15,7 @@ app.get('/', (req, res) => {
 
 var players = {}
 io.on('connect', (socket) => {
-    let sprite = () => {
-        let length = Object.keys(players).length
-
+    let sprite = (length) => {
         if (length == 1)
             return "player1.png";
         else if (length == 2)
@@ -29,12 +27,11 @@ io.on('connect', (socket) => {
 
     };
 
-    console.log("sprite", sprite());
     console.log("New client has connected with id:", socket.id);
 
     socket.on('new-player', function (payload) {
         players[socket.id] = payload;
-        players[socket.id].sprite = sprite();
+        players[socket.id].sprite = sprite(Object.keys(players).length);
 
         socket.emit('create-player', payload);
         io.emit('update-players', players); //emit to ALL connected sockets
