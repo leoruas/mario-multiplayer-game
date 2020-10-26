@@ -1,3 +1,7 @@
+/** Multiplayer game example -> https://code.tutsplus.com/tutorials/create-a-multiplayer-pirate-shooter-game-in-your-browser--cms-23311
+ *  Github repo -> https://github.com/tutsplus/tutsplus-glitch-multiplayer
+ * Types of socket io calls -> https://gist.github.com/OmarShehata/a67499b29c65c8b84f74760652890bd8
+ */
 var express = require('express');
 var app = express();
 var http = require('http').createServer(app);
@@ -9,15 +13,32 @@ app.get('/', (req, res) => {
     res.sendFile(__dirname + '/public/index.html');
 })
 
+var players = {}  
 io.on('connect', (socket) => {
-    console.log("New player connected");
+    console.log("New client has connected with id:", socket.id);
+
+    socket.on('new-player', function(data) { 
+        console.log("Player data", data);
+        players[socket.id] = data;
+
+        io.emit('update-players', players); //emit to ALL connected sockets
+        // socket.broadcast.emit('create-player', data)
+        //Calling socket.broadcast.emit sends it to every client connected to the server, except that one socket it was called on.
+    })
 
     socket.on('disconnect', () => {
         console.log("Player disconnected");
+        delete players[socket.id];
+        console.log('new players object', players);
+        io.emit('update-players', players);
     })
+
+    // socket.on('addPoint', (id) => {
+    //     socket.emit("addPoint", id);
+    // })
 })
 
-const port = 4000;
+const port = 8080;
 http.listen(port, () => {
     console.log(`Listening on port ${port}`);
 })
