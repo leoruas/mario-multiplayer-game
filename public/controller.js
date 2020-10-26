@@ -42,7 +42,7 @@ socket.on('connect', function () {
     if (x >= spriteW) x -= spriteW;
     let y = Math.floor(Math.random() * gameArea.canvas.height);
     if (y >= spriteH) y -= spriteH;
-    
+
     socket.emit('new-player', {
         x: x,
         y: y,
@@ -67,15 +67,15 @@ socket.on('addPoint', function (id) {
     scoreList.childNodes[id].innerText = `Player ${id + 1}: ${player.score} pontos`
 });
 
-socket.on('create-player', function (pl){ 
+socket.on('create-player', function (pl) {
     player = new Player(pl.x, pl.y, pl.speed, "assets/" + pl.sprite);
 
-    gameArea.start();    
+    gameArea.start();
 })
 
 socket.on('update-foods', function (payload) {
     foods = [];
-    
+
     payload.forEach((food) => {
         foods.push(new Food(food.x, food.y));
     })
@@ -131,6 +131,8 @@ function Player(x, y, speed, src) {
     }
 
     this.update = function () {
+        this.width = this.image.width;
+        this.height = this.image.height;
         ctx = gameArea.ctx;
         if (this.isFlipped) {
             ctx.save();
@@ -155,34 +157,45 @@ function Food(x, y) {
     this.width = this.image.width;
     this.height = this.image.height;
 
-    this.respawn = function () {
+    this.respawn = function (index) {
         this.x = Math.floor(Math.random() * (gameArea.canvas.width - this.width));
         this.y = Math.floor(Math.random() * (gameArea.canvas.height - this.height));
+        
+        socket.emit('update-foods', {
+            index: index,
+            x: this.x,
+            y: this.y
+        });
+        // socket.emit('respawn-food', {
+        //     index: index,
+        //     x: x,
+        //     y: y
+        // })
 
         ctx = gameArea.ctx;
 
         ctx.drawImage(this.image, this.x, this.y);
     }
 
-    this.wasEaten = function (pl) {
+    this.wasEaten = function () {
         var myLeft = this.x;
         var myRight = this.x + this.width;
 
         var myTop = this.y;
         var myBottom = this.y + this.height;
 
-        var pLeft = pl.x;
-        var pRight = pl.x + pl.width;
+        var pLeft = player.x;
+        var pRight = player.x + player.width;
 
-        var pTop = pl.y;
-        var pBottom = pl.y + pl.height;
+        var pTop = player.y;
+        var pBottom = player.y + player.height;
 
         if (myBottom >= pTop &&
             myTop <= pBottom &&
             myRight >= pLeft &&
             myLeft <= pRight
         ) {
-            pl.addPoint(0);
+            // pl.addPoint(0);
             return true;
         }
 
@@ -190,6 +203,9 @@ function Food(x, y) {
     }
 
     this.update = function () {
+        this.width = this.image.width;
+        this.height = this.image.height;
+
         ctx = gameArea.ctx;
         ctx.drawImage(this.image, this.x, this.y);
     }
@@ -198,10 +214,12 @@ function Food(x, y) {
 function updateGameArea() {
     gameArea.clear();
 
-    // foods.forEach(food => {
-    //     if(food.wasEaten(player)) food.respawn
-    // })
-    // if (food.wasEaten(player)) food.respawn();
+    foods.forEach((food, i) => {
+        if (food.wasEaten()) {
+            // console.log("eaten");
+            food.respawn(i);
+        }
+    })
 
     checkKeys();
     player.newPos();
@@ -209,7 +227,7 @@ function updateGameArea() {
     foods.forEach(food => {
         food.update();
     })
-    
+
     for (var id in otherPlayers)
         otherPlayers[id].update();
 }

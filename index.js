@@ -63,6 +63,23 @@ io.on('connect', (socket) => {
         io.emit('update-players-status', players);
     })
 
+    socket.on('update-foods', function (payload) {
+        let index = payload.index;
+        foods[index].x = payload.x;
+        foods[index].y = payload.y;
+
+        io.emit('update-foods', foods);
+    })
+
+    // socket.on('respawn-food', (payload) => {
+    //     foods[payload.index].x = payload.x;
+    //     foods[payload.index].y = payload.y;
+
+    //     io.emit('update-foods',  foods);
+    // })
+
+    socket
+
     // socket.on('addPoint', (id) => {
     //     socket.emit("addPoint", id);
     // })
