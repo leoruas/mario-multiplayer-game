@@ -138,8 +138,12 @@ function Player(x, y, speed, src) {
     this.score = 0;
 
     this.newPos = function () {
-        this.x += this.speedX;
-        this.y += this.speedY;
+        if (this.x + this.speedX < gameArea.canvas.width - this.width && this.x + this.speedX > this.width)
+            //account for right border and then left border
+            this.x += this.speedX;
+
+        if (this.y + this.speedY < gameArea.canvas.height - this.height && this.y + this.speedY > 0)
+            this.y += this.speedY;
     }
 
     this.update = function () {
