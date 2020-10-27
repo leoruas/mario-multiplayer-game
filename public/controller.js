@@ -19,8 +19,6 @@ var gameArea = {
         window.addEventListener('keyup', function (e) {
             gameArea.keys[e.key] = false;
         })
-
-        // this.frameNo = 0;
     },
     clear: function () {
         this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
@@ -30,10 +28,11 @@ var gameArea = {
 var player;
 var otherPlayers = {};
 var foods = [];
-var scoreList = document.getElementById("scoreList");
+var scoresList = document.getElementById("scoresList");
 
 socket.on('connect', function () {
     gameArea.setup();
+
     //maybe make it responsive to sprite?
     let spriteW = 30;
     let spriteH = 39;
@@ -64,7 +63,7 @@ socket.on('connect', function () {
 
 socket.on('addPoint', function (id) {
     player.score++;
-    scoreList.childNodes[id].innerText = `Player ${id + 1}: ${player.score} pontos`
+    scoresList.childNodes[id].innerText = `Player ${id + 1}: ${player.score} pontos`
 });
 
 socket.on('create-player', function (pl) {
@@ -86,7 +85,7 @@ socket.on('update-players', function (players) {
     for (var id in players) {
         if (!Object.keys(otherPlayers).includes(id) && socket.id !== id) {
             var data = players[id];
-            console.log("add new player", data);
+            
             var newPlayer = new Player(data.x, data.y, data.speed, "assets/" + data.sprite);
             otherPlayers[id] = newPlayer;
         }
@@ -95,7 +94,6 @@ socket.on('update-players', function (players) {
 
     for (var id in otherPlayers) {
         if (!Object.keys(playersFound).includes(id)) {
-            console.log("player disconnected ", id);
             delete otherPlayers[id];
         }
     }
@@ -109,6 +107,22 @@ socket.on('update-players-status', function (players) {
             })
         }
     }
+})
+
+socket.on('update-scores', (scores) => {
+    while (scoresList.hasChildNodes()) {
+        scoresList.removeChild(scoresList.firstChild);
+    }
+
+    const newScore = (text) => {
+        const item = document.createElement("li");
+        item.innerText = text
+
+        return item;
+    };
+
+    for (var id in scores)
+        scoresList.append(newScore(scores[id].text));
 })
 
 function Player(x, y, speed, src) {
@@ -160,17 +174,12 @@ function Food(x, y) {
     this.respawn = function (index) {
         this.x = Math.floor(Math.random() * (gameArea.canvas.width - this.width));
         this.y = Math.floor(Math.random() * (gameArea.canvas.height - this.height));
-        
+
         socket.emit('update-foods', {
             index: index,
             x: this.x,
             y: this.y
         });
-        // socket.emit('respawn-food', {
-        //     index: index,
-        //     x: x,
-        //     y: y
-        // })
 
         ctx = gameArea.ctx;
 
@@ -216,8 +225,9 @@ function updateGameArea() {
 
     foods.forEach((food, i) => {
         if (food.wasEaten()) {
-            // console.log("eaten");
             food.respawn(i);
+
+            socket.emit('add-point', socket.id);
         }
     })
 
@@ -264,7 +274,3 @@ function checkKeys() {
             isFlipped: player.isFlipped
         })
 }
-
-// function log() {
-//     console.log(gameArea);
-// }
