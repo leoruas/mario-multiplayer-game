@@ -17,24 +17,40 @@ var players = {};
 var scores = {};
 var foods = [];
 io.on('connect', (socket) => {
-    let sprite = (length) => {
-        if (length == 1)
-            return "player1.png";
-        else if (length == 2)
-            return "player2.png";
-        else if (length == 3)
-            return "player3.png";
-        else
-            return "player1.png";
+    let sprite = () => {
+        let ids = [];
+        let highestID = 0;
 
+        for (var socketId in players) {
+            if (socket.id != socketId) { //dont count the current player
+                ids.push(players[socketId].id); //stores ids (sprites) that are being used
+                if(highestID < players[socketId].id) highestID = players[socketId].id; //store highest id
+            }
+        }
+
+        if (!ids.includes(1)) {
+            players[socket.id].id = 1; //this is going to be player 1
+            return "player1.png";
+        } else if (!ids.includes(2)) {
+            players[socket.id].id = 2; //this is going to be player 2
+            return "player2.png";
+        } else if (!ids.includes(3)) { 
+            players[socket.id].id = 3; //this is going to be player 3
+            return "player3.png";
+        }
+
+        //if not player 1, 2 or 3 default to mario skin
+        players[socket.id].id = highestID + 1;
+        return "player1.png";
     };
 
     console.log("New client has connected with id: ", socket.id);
 
     socket.on('new-player', function (payload) {
         players[socket.id] = payload;
-        players[socket.id].sprite = sprite(Object.keys(players).length);
-        scores[socket.id] = Object.assign({}, { score: 0, text: `Player ${Object.keys(players).length}: 0 points`, id: Object.keys(players).length})
+        players[socket.id].sprite = sprite(); //gets sprites and sets player id
+        
+        scores[socket.id] = Object.assign({}, { score: 0, text: `Player ${players[socket.id].id}: 0 points`, id: players[socket.id].id});
 
         socket.emit('create-player', payload);
         io.emit('update-scores', scores);
@@ -81,7 +97,7 @@ io.on('connect', (socket) => {
     socket.on('add-point', (id) => {
         scores[id].score++;
         scores[id].text = `Player ${scores[id].id}: ${scores[id].score} points`
-        
+
         io.emit('update-scores', scores);
     })
 })
