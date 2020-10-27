@@ -61,11 +61,6 @@ socket.on('connect', function () {
     })
 })
 
-socket.on('addPoint', function (id) {
-    player.score++;
-    scoresList.childNodes[id].innerText = `Player ${id + 1}: ${player.score} pontos`
-});
-
 socket.on('create-player', function (pl) {
     player = new Player(pl.x, pl.y, pl.speed, "assets/" + pl.sprite);
 
@@ -85,7 +80,7 @@ socket.on('update-players', function (players) {
     for (var id in players) {
         if (!Object.keys(otherPlayers).includes(id) && socket.id !== id) {
             var data = players[id];
-            
+
             var newPlayer = new Player(data.x, data.y, data.speed, "assets/" + data.sprite);
             otherPlayers[id] = newPlayer;
         }
@@ -114,15 +109,18 @@ socket.on('update-scores', (scores) => {
         scoresList.removeChild(scoresList.firstChild);
     }
 
-    const newScore = (text) => {
+    const newScore = (payload) => {
         const item = document.createElement("li");
-        item.innerText = text
+        item.innerText = payload.text;
+
+        if (socket.id == payload.id)
+            item.style = 'font-weight: bold'
 
         return item;
     };
 
     for (var id in scores)
-        scoresList.append(newScore(scores[id].text));
+        scoresList.append(newScore({ id: id, text: scores[id].text }));
 })
 
 function Player(x, y, speed, src) {
