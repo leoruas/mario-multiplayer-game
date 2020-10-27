@@ -1,5 +1,7 @@
 var socket = io();
 
+var backgroundMusic = document.getElementById('background-music');
+var eatSound = document.getElementById('eat-sound');
 var gameArea = {
     canvas: document.getElementById("canvas"),
     setup: function () {
@@ -9,10 +11,11 @@ var gameArea = {
     },
     start: function () {
         this.interval = setInterval(updateGameArea, 20);
+        backgroundMusic.volume = 0.2;
+        backgroundMusic.play();
 
         this.keys = [];
         window.addEventListener('keydown', function (e) {
-            // this.keys.push(e.key)
             gameArea.keys[e.key] = true;
         })
 
@@ -143,6 +146,7 @@ function Player(x, y, speed, src) {
             this.x += this.speedX;
 
         if (this.y + this.speedY < gameArea.canvas.height - this.height && this.y + this.speedY > 0)
+            //account for bottom border and then top border
             this.y += this.speedY;
     }
 
@@ -227,6 +231,8 @@ function updateGameArea() {
 
     foods.forEach((food, i) => {
         if (food.wasEaten()) {
+            eatSound.currentTime = 1;
+            eatSound.play();
             food.respawn(i);
 
             socket.emit('add-point', socket.id);

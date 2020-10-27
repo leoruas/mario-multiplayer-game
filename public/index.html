@@ -12,6 +12,14 @@
 </head>
 
 <body>
+    <!-- not supported by chrom -> audio tag autoplay only works if user has autoplay enabled in browser -->
+    <audio id="background-music" loop>
+        <source src="assets/background-music.mp3" type="audio/mpeg">
+    </audio>
+    <audio id="eat-sound">
+        <source src="assets/munch.mp3" type="audio/mpeg">
+    </audio>
+
     <canvas id="canvas">Canvas not supported by current browser</canvas>
     <ul id="scoresList"></ul>
     <!-- <button onclick="log()">log</button> -->
